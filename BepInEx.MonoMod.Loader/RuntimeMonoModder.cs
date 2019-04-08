@@ -1,4 +1,5 @@
-﻿using BepInEx.Logging;
+﻿using System.IO;
+using BepInEx.Logging;
 using Mono.Cecil;
 using MonoMod;
 
@@ -41,7 +42,11 @@ namespace BepInEx.MonoMod.Loader
 			Read();
 
 			Log("[Main] Scanning for mods in directory.");
+
 			ReadMod(modDirectory);
+
+			foreach (var directory in Directory.GetDirectories(modDirectory, "*", SearchOption.AllDirectories))
+				ReadMod(directory);
 
 			MapDependencies();
 
