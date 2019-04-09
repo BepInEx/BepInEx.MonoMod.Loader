@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using BepInEx.Logging;
 using Mono.Cecil;
@@ -13,6 +14,8 @@ namespace BepInEx.MonoMod.Loader
 
 		public static void Patch(AssemblyDefinition assembly)
 		{
+			Environment.SetEnvironmentVariable("MONOMOD_DMD_TYPE", "Cecil");
+
 			string assemblyFolder = new System.Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath;
 
 			string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
