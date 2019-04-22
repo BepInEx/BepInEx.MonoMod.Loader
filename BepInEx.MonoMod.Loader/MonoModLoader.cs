@@ -38,13 +38,19 @@ namespace BepInEx.MonoMod.Loader
 				monoModder.DependencyDirs.AddRange(ResolveDirectories);
 
 				var resolver = (BaseAssemblyResolver)monoModder.AssemblyResolver;
+				var moduleResolver = (BaseAssemblyResolver)monoModder.Module.AssemblyResolver;
 
 				foreach (var dir in ResolveDirectories)
 					resolver.AddSearchDirectory(dir);
 
 				resolver.ResolveFailure += ResolverOnResolveFailure;
+				// Add our dependency resolver to the assembly resolver of the module we are patching
+				moduleResolver.ResolveFailure += ResolverOnResolveFailure;
 
 				monoModder.PerformPatches(monoModPath);
+
+				// Then remove our resolver after we are done patching to not interfere with other patchers
+				moduleResolver.ResolveFailure -= ResolverOnResolveFailure;
 			}
 		}
 
