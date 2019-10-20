@@ -7,79 +7,116 @@ using Mono.Cecil;
 
 namespace BepInEx.MonoMod.Loader
 {
-	public static class Patcher
-	{
-		public static IEnumerable<string> TargetDLLs { get; } = new[] { "Assembly-CSharp.dll" };
+    public static class Patcher
+    {
+        public static IEnumerable<string> TargetDLLs => CollectDependencies();
 
-		private static ManualLogSource Logger = Logging.Logger.CreateLogSource("MonoMod");
+        private static ManualLogSource Logger = Logging.Logger.CreateLogSource("MonoMod");
 
-		public static string[] ResolveDirectories { get; set; } =
-		{
-			Paths.BepInExAssemblyDirectory,
-			Paths.ManagedPath,
-			Paths.PatcherPluginPath,
-			Paths.PluginPath
-		};
+        public static string[] ResolveDirectories { get; set; } =
+        {
+            Paths.BepInExAssemblyDirectory,
+            Paths.ManagedPath,
+            Paths.PatcherPluginPath,
+            Paths.PluginPath
+        };
 
-		public static void Patch(AssemblyDefinition assembly)
-		{
-			Environment.SetEnvironmentVariable("MONOMOD_DMD_TYPE", "Cecil");
-			
-			string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
+        private static readonly HashSet<string> UnpatchableAssemblies =
+            new HashSet<string>(StringComparer.CurrentCultureIgnoreCase) { "mscorlib" };
 
-			if (!Directory.Exists(monoModPath))
-				Directory.CreateDirectory(monoModPath);
-			
+        private static IEnumerable<string> CollectDependencies()
+        {
+            string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
 
-			using (var monoModder = new RuntimeMonoModder(assembly, Logger))
-			{
-				monoModder.LogVerboseEnabled = false;
+            if (!Directory.Exists(monoModPath))
+                Directory.CreateDirectory(monoModPath);
 
-				monoModder.DependencyDirs.AddRange(ResolveDirectories);
+            Logger.LogInfo("Collecting target assemblies from mods");
 
-				var resolver = (BaseAssemblyResolver)monoModder.AssemblyResolver;
-				var moduleResolver = (BaseAssemblyResolver)monoModder.Module.AssemblyResolver;
+            var result = new HashSet<string>();
 
-				foreach (var dir in ResolveDirectories)
-					resolver.AddSearchDirectory(dir);
+            foreach (var modDll in Directory.GetFiles(monoModPath, "*.mm.dll", SearchOption.AllDirectories))
+            {
+                var fileName = Path.GetFileNameWithoutExtension(modDll);
+                try
+                {
+                    using (var ass = AssemblyDefinition.ReadAssembly(modDll))
+                        foreach (var assRef in ass.MainModule.AssemblyReferences)
+                            if (!UnpatchableAssemblies.Contains(assRef.Name) &&
+                                (fileName.StartsWith(assRef.Name, StringComparison.InvariantCultureIgnoreCase) ||
+                                 fileName.StartsWith(assRef.Name.Replace(" ", ""),
+                                                     StringComparison.InvariantCultureIgnoreCase)))
+                                result.Add($"{assRef.Name}.dll");
+                }
+                catch (Exception)
+                {
+                    // skip
+                }
+            }
 
-				resolver.ResolveFailure += ResolverOnResolveFailure;
-				// Add our dependency resolver to the assembly resolver of the module we are patching
-				moduleResolver.ResolveFailure += ResolverOnResolveFailure;
+            return result;
+        }
 
-				monoModder.PerformPatches(monoModPath);
+        public static void Patch(AssemblyDefinition assembly)
+        {
+            Environment.SetEnvironmentVariable("MONOMOD_DMD_TYPE", "Cecil");
 
-				// Then remove our resolver after we are done patching to not interfere with other patchers
-				moduleResolver.ResolveFailure -= ResolverOnResolveFailure;
-			}
-		}
+            string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
 
-		private static AssemblyDefinition ResolverOnResolveFailure(object sender, AssemblyNameReference reference)
-		{
-			foreach (var directory in ResolveDirectories)
-			{
-				var potentialDirectories = new List<string> { directory };
+            if (!Directory.Exists(monoModPath))
+                Directory.CreateDirectory(monoModPath);
 
-				potentialDirectories.AddRange(Directory.GetDirectories(directory, "*", SearchOption.AllDirectories));
 
-				var potentialFiles = potentialDirectories.Select(x => Path.Combine(x, $"{reference.Name}.dll"))
-					.Concat(potentialDirectories.Select(x => Path.Combine(x, $"{reference.Name}.exe")));
+            using (var monoModder = new RuntimeMonoModder(assembly, Logger))
+            {
+                monoModder.LogVerboseEnabled = false;
 
-				foreach (string path in potentialFiles)
-				{
-					if (!File.Exists(path))
-						continue;
+                monoModder.DependencyDirs.AddRange(ResolveDirectories);
 
-					var assembly = AssemblyDefinition.ReadAssembly(path, new ReaderParameters(ReadingMode.Deferred));
+                var resolver = (BaseAssemblyResolver)monoModder.AssemblyResolver;
+                var moduleResolver = (BaseAssemblyResolver)monoModder.Module.AssemblyResolver;
 
-					if (assembly.Name.Name == reference.Name)
-						return assembly;
+                foreach (var dir in ResolveDirectories)
+                    resolver.AddSearchDirectory(dir);
 
-					assembly.Dispose();
-				}
-			}
+                resolver.ResolveFailure += ResolverOnResolveFailure;
+                // Add our dependency resolver to the assembly resolver of the module we are patching
+                moduleResolver.ResolveFailure += ResolverOnResolveFailure;
 
-			return null;
-		}
-	}
+                monoModder.PerformPatches(monoModPath);
+
+                // Then remove our resolver after we are done patching to not interfere with other patchers
+                moduleResolver.ResolveFailure -= ResolverOnResolveFailure;
+            }
+        }
+
+        private static AssemblyDefinition ResolverOnResolveFailure(object sender, AssemblyNameReference reference)
+        {
+            foreach (var directory in ResolveDirectories)
+            {
+                var potentialDirectories = new List<string> { directory };
+
+                potentialDirectories.AddRange(Directory.GetDirectories(directory, "*", SearchOption.AllDirectories));
+
+                var potentialFiles = potentialDirectories.Select(x => Path.Combine(x, $"{reference.Name}.dll"))
+                                                         .Concat(potentialDirectories.Select(
+                                                                     x => Path.Combine(x, $"{reference.Name}.exe")));
+
+                foreach (string path in potentialFiles)
+                {
+                    if (!File.Exists(path))
+                        continue;
+
+                    var assembly = AssemblyDefinition.ReadAssembly(path, new ReaderParameters(ReadingMode.Deferred));
+
+                    if (assembly.Name.Name == reference.Name)
+                        return assembly;
+
+                    assembly.Dispose();
+                }
+            }
+
+            return null;
+        }
+    }
 }
