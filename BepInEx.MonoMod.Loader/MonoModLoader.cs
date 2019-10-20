@@ -9,7 +9,7 @@ namespace BepInEx.MonoMod.Loader
 {
     public static class Patcher
     {
-        public static IEnumerable<string> TargetDLLs => CollectDependencies();
+        public static IEnumerable<string> TargetDLLs => CollectTargetDLLs();
 
         private static ManualLogSource Logger = Logging.Logger.CreateLogSource("MonoMod");
 
@@ -24,7 +24,7 @@ namespace BepInEx.MonoMod.Loader
         private static readonly HashSet<string> UnpatchableAssemblies =
             new HashSet<string>(StringComparer.CurrentCultureIgnoreCase) { "mscorlib" };
 
-        private static IEnumerable<string> CollectDependencies()
+        private static IEnumerable<string> CollectTargetDLLs()
         {
             string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
 
