@@ -50,6 +50,8 @@ namespace BepInEx.MonoMod.Loader
 
 			MapDependencies();
 
+            Log($"[Main] Found {Mods.Count} mods");
+
 			Log("[Main] mm.PatchRefs(); fixup pre-pass");
 			PatchRefs();
 
