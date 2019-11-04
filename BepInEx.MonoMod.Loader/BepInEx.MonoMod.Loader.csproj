@@ -47,11 +47,11 @@
     <Reference Include="Mono.Cecil.Rocks, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <HintPath>..\packages\Mono.Cecil.0.10.4\lib\net35\Mono.Cecil.Rocks.dll</HintPath>
     </Reference>
-    <Reference Include="MonoMod, Version=19.11.1.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MonoMod.19.11.1.1\lib\net35\MonoMod.exe</HintPath>
+    <Reference Include="MonoMod, Version=19.11.4.5, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MonoMod.19.11.4.5\lib\net35\MonoMod.exe</HintPath>
     </Reference>
-    <Reference Include="MonoMod.Utils, Version=19.11.1.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MonoMod.Utils.19.11.1.1\lib\net35\MonoMod.Utils.dll</HintPath>
+    <Reference Include="MonoMod.Utils, Version=19.11.4.5, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MonoMod.Utils.19.11.4.5\lib\net35\MonoMod.Utils.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
