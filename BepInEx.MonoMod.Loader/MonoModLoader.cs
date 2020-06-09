@@ -59,8 +59,6 @@ namespace BepInEx.MonoMod.Loader
 
         public static void Patch(AssemblyDefinition assembly)
         {
-            Environment.SetEnvironmentVariable("MONOMOD_DMD_TYPE", "Cecil");
-
             string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
 
             if (!Directory.Exists(monoModPath))
