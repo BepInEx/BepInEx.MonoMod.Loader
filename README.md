@@ -10,6 +10,7 @@ Main features
 
 ## Installation
 
+0. [Download and install](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html) BepInEx 5.0 or newer
 1. Download the latest version from [releases](https://github.com/BepInEx/BepInEx.MonoMod.Loader/releases)
 2. Extract the contents of the archive into the game folder (the folder that contains `BepInEx` folder)
 3. Install MonoMod patches into `BepInEx/monomod` folder
