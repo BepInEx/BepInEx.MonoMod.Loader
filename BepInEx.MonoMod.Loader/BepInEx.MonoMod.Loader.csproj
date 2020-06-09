@@ -31,13 +31,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BepInEx">
-      <HintPath>..\..\BepInEx\bin\BepInEx.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="BepInEx, Version=5.1.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\lib\BepInEx.dll</HintPath>
     </Reference>
-    <Reference Include="BepInEx.Preloader">
-      <HintPath>..\..\BepInEx\bin\BepInEx.Preloader.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="BepInEx.Preloader, Version=5.1.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\lib\BepInEx.Preloader.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <HintPath>..\packages\Mono.Cecil.0.10.4\lib\net35\Mono.Cecil.dll</HintPath>
@@ -50,13 +48,6 @@
     </Reference>
     <Reference Include="Mono.Cecil.Rocks, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <HintPath>..\packages\Mono.Cecil.0.10.4\lib\net35\Mono.Cecil.Rocks.dll</HintPath>
-    </Reference>
-    <Reference Include="MonoMod, Version=19.11.5.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MonoMod.19.11.5.1\lib\net35\MonoMod.exe</HintPath>
-    </Reference>
-    <Reference Include="MonoMod, Version=20.3.5.1, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\packages\MonoMod.20.3.5.1\lib\net35\MonoMod.exe</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="MonoMod, Version=20.5.21.5, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\packages\MonoMod.20.5.21.5\lib\net35\MonoMod.exe</HintPath>
