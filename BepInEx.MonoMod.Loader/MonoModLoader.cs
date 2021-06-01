@@ -13,13 +13,18 @@ namespace BepInEx.MonoMod.Loader
 
         private static ManualLogSource Logger = Logging.Logger.CreateLogSource("MonoMod");
 
-        public static string[] ResolveDirectories { get; set; } =
+        public static List<string> ResolveDirectories { get; set; } = new List<string>
         {
             Paths.BepInExAssemblyDirectory,
-            Paths.ManagedPath,
             Paths.PatcherPluginPath,
             Paths.PluginPath
         };
+
+        static Patcher()
+		{
+            if (Directory.Exists(Paths.ManagedPath))
+                ResolveDirectories.Add(Paths.ManagedPath);
+		}
 
         private static readonly HashSet<string> UnpatchableAssemblies =
             new HashSet<string>(StringComparer.CurrentCultureIgnoreCase) { "mscorlib" };
@@ -37,16 +42,25 @@ namespace BepInEx.MonoMod.Loader
 
             foreach (var modDll in Directory.GetFiles(monoModPath, "*.mm.dll", SearchOption.AllDirectories))
             {
+                Logger.LogDebug($"Found '{modDll}'");
+
                 var fileName = Path.GetFileNameWithoutExtension(modDll);
                 try
                 {
-                    using (var ass = AssemblyDefinition.ReadAssembly(modDll))
-                        foreach (var assRef in ass.MainModule.AssemblyReferences)
-                            if (!UnpatchableAssemblies.Contains(assRef.Name) &&
-                                (fileName.StartsWith(assRef.Name, StringComparison.InvariantCultureIgnoreCase) ||
-                                 fileName.StartsWith(assRef.Name.Replace(" ", ""),
-                                                     StringComparison.InvariantCultureIgnoreCase)))
-                                result.Add($"{assRef.Name}.dll");
+	                using (var ass = AssemblyDefinition.ReadAssembly(modDll))
+	                {
+		                foreach (var assRef in ass.MainModule.AssemblyReferences)
+		                {
+			                if (!UnpatchableAssemblies.Contains(assRef.Name) &&
+			                    (fileName.StartsWith(assRef.Name, StringComparison.InvariantCultureIgnoreCase) ||
+			                     fileName.StartsWith(assRef.Name.Replace(" ", ""),
+				                     StringComparison.InvariantCultureIgnoreCase)))
+			                {
+				                result.Add($"{assRef.Name}.dll");
+				                result.Add($"{assRef.Name}.exe");
+			                }
+		                }
+	                }
                 }
                 catch (Exception)
                 {
