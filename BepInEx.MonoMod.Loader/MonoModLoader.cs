@@ -2,47 +2,48 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BepInEx.Logging;
+using BepInEx.Preloader.Core.Patching;
 using Mono.Cecil;
 
 namespace BepInEx.MonoMod.Loader
 {
-    public static class Patcher
+    [PatcherPluginInfo("io.bepinex.monomodloader", "MonoMod Loader", "2.0")]
+    public class Patcher : BasePatcher
     {
-        public static IEnumerable<string> TargetDLLs => CollectTargetDLLs();
-
-        private static ManualLogSource Logger = Logging.Logger.CreateLogSource("MonoMod");
-
-        public static List<string> ResolveDirectories { get; set; } = new List<string>
+        public List<string> ResolveDirectories { get; set; } = new List<string>
         {
             Paths.BepInExAssemblyDirectory,
             Paths.PatcherPluginPath,
             Paths.PluginPath
         };
-
-        static Patcher()
-		{
-            if (Directory.Exists(Paths.ManagedPath))
-                ResolveDirectories.Add(Paths.ManagedPath);
-		}
-
+        
         private static readonly HashSet<string> UnpatchableAssemblies =
             new HashSet<string>(StringComparer.CurrentCultureIgnoreCase) { "mscorlib" };
 
-        private static IEnumerable<string> CollectTargetDLLs()
+        private HashSet<string> TargetAssemblies { get; set; }
+
+        private readonly string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
+
+        public override void Initialize()
         {
-            string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
+	        if (Directory.Exists(Paths.ManagedPath))
+		        ResolveDirectories.Add(Paths.ManagedPath);
 
-            if (!Directory.Exists(monoModPath))
-                Directory.CreateDirectory(monoModPath);
+	        if (!Directory.Exists(monoModPath))
+		        Directory.CreateDirectory(monoModPath);
 
-            Logger.LogInfo("Collecting target assemblies from mods");
+	        TargetAssemblies = CollectTargetDLLs();
+        }
+
+        private HashSet<string> CollectTargetDLLs()
+        {
+            Log.LogInfo("Collecting target assemblies from mods");
 
             var result = new HashSet<string>();
 
             foreach (var modDll in Directory.GetFiles(monoModPath, "*.mm.dll", SearchOption.AllDirectories))
             {
-                Logger.LogDebug($"Found '{modDll}'");
+	            Log.LogDebug($"Found '{modDll}'");
 
                 var fileName = Path.GetFileNameWithoutExtension(modDll);
                 try
@@ -62,24 +63,22 @@ namespace BepInEx.MonoMod.Loader
 		                }
 	                }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // skip
+                    Log.LogDebug($"Ran into a problem scanning '{modDll}'; will skip. Exception: {ex}");
                 }
             }
 
             return result;
         }
 
-        public static void Patch(AssemblyDefinition assembly)
+        [TargetAssembly(TargetAssemblyAttribute.AllAssemblies)]
+        public bool Patch(ref AssemblyDefinition assembly, string targetDll)
         {
-            string monoModPath = Path.Combine(Paths.BepInExRootPath, "monomod");
+            if (!TargetAssemblies.Contains(targetDll))
+                return false;
 
-            if (!Directory.Exists(monoModPath))
-                Directory.CreateDirectory(monoModPath);
-
-
-            using (var monoModder = new RuntimeMonoModder(assembly, Logger))
+            using (var monoModder = new RuntimeMonoModder(assembly, Log))
             {
                 monoModder.LogVerboseEnabled = false;
 
@@ -100,9 +99,11 @@ namespace BepInEx.MonoMod.Loader
                 // Then remove our resolver after we are done patching to not interfere with other patchers
                 moduleResolver.ResolveFailure -= ResolverOnResolveFailure;
             }
+
+            return true;
         }
 
-        private static AssemblyDefinition ResolverOnResolveFailure(object sender, AssemblyNameReference reference)
+        private AssemblyDefinition ResolverOnResolveFailure(object sender, AssemblyNameReference reference)
         {
             foreach (var directory in ResolveDirectories)
             {
